@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.setThreadPolicy(policy);
 
         imageView = (ImageView)findViewById(R.id.imageView);
-        imageView.setRotation(90);
+        //imageView.setRotation(90);
 
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"AugustanaRobotImgs");
         if(!storageDir.exists()){
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
                                         Log.d("ImageView","Change Image View");
                                         imageView.setImageBitmap(map.bm);
-                                        imageView.setImageResource(R.mipmap.ic_launcher);
+                                        //imageView.setImageResource(R.mipmap.ic_launcher);
                                         //imageView.invalidate();
                                         Log.d("ImageView", "Current File: "+map.bm.toString());
 
