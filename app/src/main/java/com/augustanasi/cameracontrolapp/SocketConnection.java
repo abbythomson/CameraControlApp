@@ -5,12 +5,14 @@ package com.augustanasi.cameracontrolapp;
  */
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +29,8 @@ public class SocketConnection {
     private BufferedOutputStream bos;
     private BufferedInputStream bis;
     private DataInputStream dis;
+    private int count;
+    private File imageFile;
 
 
     public SocketConnection(int portNum, String ip,String fp) throws Exception{
@@ -35,10 +39,14 @@ public class SocketConnection {
         Log.d("SocketConnection","Socket Created");
         os = new OutputStreamWriter(socket.getOutputStream());
         filePath = fp;
-        fos = new FileOutputStream(filePath);
+        //fos = new FileOutputStream(filePath);
         bos = new BufferedOutputStream(fos);
         bis = new BufferedInputStream(socket.getInputStream());
         dis = new DataInputStream(bis);
+        count = 0;
+        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AugustanaRobotImgs");
+        imageFile = new File(storageDir,"image.png");
+        fos = new FileOutputStream(imageFile);
     }
 
   /*  public void sendMsg() throws IOException {
@@ -73,6 +81,7 @@ public class SocketConnection {
         Log.d("Socket","Start to write to file");
         fos.write(fileByArray);
         Log.d("Socket","File writen Complete");
+        Log.d("File","Image File Size = "+imageFile);
         //int bytesRead = is.read(fileByArray,0,fileByArray.length);
         //int current = bytesRead;
 //        try{

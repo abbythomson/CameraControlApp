@@ -1,6 +1,9 @@
 package com.augustanasi.cameracontrolapp;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -25,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     boolean stop;
     Button stopBtn;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
             storageDir.mkdir();
         }
         filePath = storageDir.getPath()+"/image.png";
+
+
 
         connect = (Button)findViewById(R.id.connectBtn);
         connect.setOnClickListener(new View.OnClickListener() {
@@ -68,16 +74,23 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("START","Running");
                             try {
                                 Log.d("Socket","Requesting Image");
-                                final  Bitmap map = socketConnection.requestImg();
+                                final Map map = new Map();
+                                map.bm = socketConnection.requestImg();
+
                                 Log.d("Socket","Image recieve");
-                                Log.d("ImageView","BitMap byte Count ="+map.getByteCount());
+                                Log.d("ImageView","BitMap byte Count ="+map.bm.getByteCount());
 
                                 Log.d("Image View","Set Image View");
                                 MainActivity.this.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
+
                                         Log.d("ImageView","Change Image View");
-                                        imageView.setImageBitmap(map);
+                                        imageView.setImageBitmap(map.bm);
+                                        imageView.setImageResource(R.mipmap.ic_launcher);
+                                        //imageView.invalidate();
+                                        Log.d("ImageView", "Current File: "+map.bm.toString());
+
                                     }
                                 });
 
@@ -131,7 +144,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }*/
+    private static class Map{
+        public Bitmap bm;
+    }
 }
+
+
 
 class ImageThread extends Thread{
     private SocketConnection connection;
