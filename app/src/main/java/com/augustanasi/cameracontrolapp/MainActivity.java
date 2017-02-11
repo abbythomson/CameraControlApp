@@ -1,92 +1,128 @@
 package com.augustanasi.cameracontrolapp;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Environment;
-import android.renderscript.ScriptGroup;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
-import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
 
 public class MainActivity extends AppCompatActivity {
     Button connect;
-    EditText ipNum;
-    String ipString;
+    Button start;
+    String ipString = "10.100.9.174";
+    final int port = 5678;
     String filePath;
     ImageView imageView;
+    SocketConnection socketConnection;
+    boolean stop;
+    Button stopBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final int port = 5678;
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
         imageView = (ImageView)findViewById(R.id.imageView);
+        imageView.setRotation(90);
 
-        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"AppPics");
+        File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"AugustanaRobotImgs");
+        if(!storageDir.exists()){
+            storageDir.mkdir();
+        }
         filePath = storageDir.getPath()+"/image.png";
-
-        File temp = new File(storageDir,"image.png");
-
-        Log.d("FilePath","File Path: "+filePath);
-
-        Log.d("Location","Exists: "+storageDir.exists());
-
-        Log.d("File", temp.getName()+" "+temp.toString());
-
-        Bitmap bmp = BitmapFactory.decodeFile(filePath);
-        //imageView.setImageBitmap(bmp);
-
 
         connect = (Button)findViewById(R.id.connectBtn);
         connect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               /* try{
-                    Socket server = new Socket(ipString,port);
-                    InputStream is = server.getInputStream();
-                    OutputStreamWriter osWriter = new OutputStreamWriter(server.getOutputStream());
-                    osWriter.write("size\n");
-                    int fileSize = is.read();
-                    Log.d("READ IN","File Size = "+fileSize);
-                    byte[] fileBytes = new byte[fileSize];
-                    loadImages(is,fileSize,server);
+                Log.d("Connect","HERE");
+                try{
+                    connectToSocket();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
 
-                }catch (IOException e){
-
-                }*/
 
             }
         });
-        ipNum =  (EditText)findViewById(R.id.IPNum);
 
-        ipNum.addTextChangedListener(addressTW);
+        start = (Button) findViewById(R.id.start);
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        while(!stop){
+                            Log.d("START","Running");
+                            try {
+                                Log.d("Socket","Requesting Image");
+                                final  Bitmap map = socketConnection.requestImg();
+                                Log.d("Socket","Image recieve");
+                                Log.d("ImageView","BitMap byte Count ="+map.getByteCount());
+
+                                Log.d("Image View","Set Image View");
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Log.d("ImageView","Change Image View");
+                                        imageView.setImageBitmap(map);
+                                    }
+                                });
+
+                                //socketConnection.sendMsg();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+
+            }
+        });
+
+        stopBtn = (Button)findViewById(R.id.stop);
+        stopBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("Socket","Stop Transfer");
+                stop = true;
+                try{
+                    Log.d("Socket","Called SocketConnection.stopTranfer");
+                    socketConnection.stopTransfer();
+                } catch(IOException e ){
+                    e.printStackTrace();
+                }
+                socketConnection.closeSocket();
+            }
+        });
     }
 
-    private void loadImages(InputStream is, int fileSize, Socket server){
-
-        Thread imageThread = new Thread();
+    public void connectToSocket() throws Exception{
+        socketConnection = new SocketConnection(port,ipString,filePath);
+        //socketConnection.sendMsg();
+        //ImageThread imgThread = new ImageThread(socketConnection,imageView);
+        connect.setClickable(false);
+        //imgThread.start();
+    }
+    /*private void loadImages(InputStream is, Socket server){
 
         try{
             FileOutputStream fos = new FileOutputStream(filePath);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
-            ImageThread imgThread = new ImageThread(fos,bos,is,fileSize,filePath,imageView);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(server.getOutputStream());
+            ImageThread imgThread = new ImageThread(fos,outputStreamWriter,bos,is,filePath,imageView);
             imgThread.start();
             bos.close();
             server.close();
@@ -94,49 +130,22 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-    }
-
-    private TextWatcher addressTW = new TextWatcher() {
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-            ipString = s.toString();
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-
-        }
-    };
+    }*/
 }
 
 class ImageThread extends Thread{
-    private FileOutputStream fos;
-    private BufferedOutputStream bos;
-    private InputStream is;
-    private byte[] fileData;
-    private ImageView imgView;
-    private String path;
+    private SocketConnection connection;
     private Bitmap bmp;
+    private ImageView imgView;
 
-    public ImageThread(FileOutputStream fileOutputStream, BufferedOutputStream bufferedOutputStream, InputStream stream, int numByes , String filePath, ImageView view){
-        fos = fileOutputStream;
-        bos = bufferedOutputStream;
-        is = stream;
-        fileData = new byte[numByes];
+    public ImageThread(SocketConnection c, ImageView view){
+       connection = c;
         imgView = view;
-        path = filePath;
-        bmp = BitmapFactory.decodeFile(path);
     }
     public void run(){
         try{
             while(true){
-                int bytesRead = is.read(fileData,0,fileData.length);
-                bos.write(fileData,0,bytesRead);
+                bmp = connection.requestImg();
                 imgView.setImageBitmap(bmp);
             }
 
