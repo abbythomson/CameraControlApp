@@ -46,7 +46,7 @@ public class SocketConnection {
         count = 0;
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "AugustanaRobotImgs");
         imageFile = new File(storageDir,"image.png");
-        fos = new FileOutputStream(imageFile);
+        fos = new FileOutputStream(imageFile,false);
     }
 
   /*  public void sendMsg() throws IOException {
@@ -81,7 +81,7 @@ public class SocketConnection {
         Log.d("Socket","Start to write to file");
         fos.write(fileByArray);
         Log.d("Socket","File writen Complete");
-        Log.d("File","Image File Size = "+imageFile);
+        Log.d("File","Image File Size = "+imageFile.length());
         //int bytesRead = is.read(fileByArray,0,fileByArray.length);
         //int current = bytesRead;
 //        try{
